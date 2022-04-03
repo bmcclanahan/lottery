@@ -9,21 +9,8 @@ import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
+import "./interfaces/IERC20.sol";
 
-interface IERC20 {
-    function totalSupply() external view returns (uint256);   
-    function balanceOf(address account) external view returns (uint256);
-    function transfer(address to, uint256 amount) external returns (bool);
-    function allowance(address owner, address spender) external view returns (uint256);
-    function approve(address spender, uint256 amount) external returns (bool);
-    function transferFrom(
-        address from,
-        address to,
-        uint256 amount
-    ) external returns (bool);
-    event Transfer(address indexed from, address indexed to, uint256 value);
-    event Approval(address indexed owner, address indexed spender, uint256 value);
-}
 
 /**
  * @title Lottery
@@ -48,7 +35,7 @@ contract Lottery is ERC721Tradable, VRFConsumerBaseV2 {
     uint256[] public s_randomWords;
     uint256 public s_requestId;
     address s_owner;
-    address weth = 0xc778417E063141139Fce010982780140Aa0cD5Ab;
+   // address weth = 0xc778417E063141139Fce010982780140Aa0cD5Ab;
 
     uint256 winner; //changed assign
     uint256 public lotterytStart = 0;
@@ -65,7 +52,7 @@ contract Lottery is ERC721Tradable, VRFConsumerBaseV2 {
 
     constructor(
         address _proxyRegistryAddress, address _vrfCoordinator, 
-        uint64 _s_subscriptionId
+        address _weth, uint64 _s_subscriptionId
     )
         ERC721Tradable("Lottery", "OSC", _proxyRegistryAddress)
         VRFConsumerBaseV2(_vrfCoordinator)
@@ -74,7 +61,7 @@ contract Lottery is ERC721Tradable, VRFConsumerBaseV2 {
         LINKTOKEN = LinkTokenInterface(link);
         s_owner = msg.sender;
         s_subscriptionId = _s_subscriptionId;
-        WETH = IERC20(weth);
+        WETH = IERC20(_weth);
     }
 
     function wethBalance() public view returns(uint){

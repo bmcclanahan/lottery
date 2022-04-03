@@ -21,18 +21,24 @@ describe("NFT contract", function () {
   // `before` and `beforeEach` callbacks.
 
   let lottery;
+  let mockWETH;
   let mockProxyRegistry;
   let mockVFRCoordinator;
   let lotteryContract;
   let proxyContract;
   let vrfCoordinatorContract;
+  let WETH;
   let owner;
   let addr1;
   let addr2;
   let addrs;
+  let amount = 100;
 
   beforeEach(async function () {
     [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+
+    mockWETH = await ethers.getContractFactory("MockWETH");
+    WETH = await mockWETH.deploy(owner.address, amount);
 
     mockProxyRegistry = await ethers.getContractFactory("MockProxyRegistry");
     proxyContract = await mockProxyRegistry.deploy();
@@ -40,15 +46,13 @@ describe("NFT contract", function () {
     mockVFRCoordinator = await ethers.getContractFactory("MockVRFCoordinator");
     vrfCoordinatorContract = await mockVFRCoordinator.deploy();
 
-    lottery = await ethers.getContractFactory("Lottery");
-    
+    lottery = await ethers.getContractFactory("Lottery");  
     lotteryContract = await lottery.deploy(
-        proxyContract.address, vrfCoordinatorContract.address, 1943
+        proxyContract.address, vrfCoordinatorContract.address, WETH.address, 1943
     );
-    console.log("coordinator address ", vrfCoordinatorContract.address)
   });
 
-  describe("Deployment", function () {
+  describe("Transactions", function () {
     // `it` is another Mocha function. This is the one you use to define your
     // tests. It receives the test name, and a callback function.
     it("Should assign the total supply of tokens to the owner", async function () {
@@ -58,12 +62,15 @@ describe("NFT contract", function () {
     });
 
     it("Should open the lottery when owner balance is greater than zero", async function () {
+      expect(await lotteryContract.getLotteryOpen()).to.equal(false);
       await lotteryContract.mint(1);
       expect(await lotteryContract.getLotteryOpen()).to.equal(true);
     });
 
     it("Should close the lottery when owner balance is zero", async function () {
+      expect(await lotteryContract.getLotteryOpen()).to.equal(false);
       await lotteryContract.mint(1);
+      expect(await lotteryContract.getLotteryOpen()).to.equal(true);
       await lotteryContract.transferFrom(owner.address, addr1.address, 1);
       expect(await lotteryContract.getLotteryOpen()).to.equal(false);
     });
@@ -77,46 +84,27 @@ describe("NFT contract", function () {
     });
     
   });
+  describe("Pay Out", function(){
 
+    it("should have a WETH balance of 100", async function () {
+      expect(await lotteryContract.wethBalance()).to.equal(amount);
+    })
+    
+  })
 
-  /*describe("Transactions", function () {
-    it("Should transfer tokens between accounts", async function () {
+  describe("getWinner", function(){
+    it("should return 2 if lottery is closed ", async function () {
+      await lotteryContract.mint(3);
+      for(let i=1; i<4; i++){
+        await lotteryContract.transferFrom(owner.address, addr1.address, i);
+      }
+      expect(await lotteryContract.getWinner()).to.equal(2);
+    })
 
-    });
+    it("should revert if lottery is open ", async function () {
+    })
 
-    it("Should fail if sender doesn’t possess NFT", async function () {
-      const initialOwnerBalance = await hardhatToken.balanceOf(owner.address);
+  })
 
-      // Try to send 1 token from addr1 (0 tokens) to owner (1000000 tokens).
-      // `require` will evaluate false and revert the transaction.
-      await expect(
-        hardhatToken.connect(addr1).transfer(owner.address, 1)
-      ).to.be.revertedWith("Not enough tokens");
-
-      // Owner balance shouldn't have changed.
-      expect(await hardhatToken.balanceOf(owner.address)).to.equal(
-        initialOwnerBalance
-      );
-    });
-
-    it("Should update balances after transfers", async function () {
-      const initialOwnerBalance = await hardhatToken.balanceOf(owner.address);
-
-      // Transfer 100 tokens from owner to addr1.
-      await hardhatToken.transfer(addr1.address, 100);
-
-      // Transfer another 50 tokens from owner to addr2.
-      await hardhatToken.transfer(addr2.address, 50);
-
-      // Check balances.
-      const finalOwnerBalance = await hardhatToken.balanceOf(owner.address);
-      expect(finalOwnerBalance).to.equal(initialOwnerBalance.sub(150));
-
-      const addr1Balance = await hardhatToken.balanceOf(addr1.address);
-      expect(addr1Balance).to.equal(100);
-
-      const addr2Balance = await hardhatToken.balanceOf(addr2.address);
-      expect(addr2Balance).to.equal(50);
-    });
-  });*/
+  
 });
