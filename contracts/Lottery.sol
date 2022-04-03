@@ -8,6 +8,7 @@ import "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "hardhat/console.sol";
 
 interface IERC20 {
     function totalSupply() external view returns (uint256);   
@@ -35,7 +36,7 @@ contract Lottery is ERC721Tradable, VRFConsumerBaseV2 {
     IERC20 WETH;
 
     uint64 s_subscriptionId;
-    address vrfCoordinator = 0x6168499c0cFfCaCD319c818142124B7A15E857ab;
+    //address vrfCoordinator = 0x6168499c0cFfCaCD319c818142124B7A15E857ab;
     address link = 0x01BE23585060835E02B77ef475b0Cc51aA1e0709;
     bytes32 keyHash =
         0xd89b2bf150e3b9e13446986e571fb9cab24b13cea0a43ea20a6049a85cc807cc;
@@ -62,11 +63,14 @@ contract Lottery is ERC721Tradable, VRFConsumerBaseV2 {
 
     bool lotteryOpen = false;
 
-    constructor(address _proxyRegistryAddress, uint64 _s_subscriptionId)
+    constructor(
+        address _proxyRegistryAddress, address _vrfCoordinator, 
+        uint64 _s_subscriptionId
+    )
         ERC721Tradable("Lottery", "OSC", _proxyRegistryAddress)
-        VRFConsumerBaseV2(vrfCoordinator)
+        VRFConsumerBaseV2(_vrfCoordinator)
     {
-        COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
+        COORDINATOR = VRFCoordinatorV2Interface(_vrfCoordinator);
         LINKTOKEN = LinkTokenInterface(link);
         s_owner = msg.sender;
         s_subscriptionId = _s_subscriptionId;
@@ -90,6 +94,7 @@ contract Lottery is ERC721Tradable, VRFConsumerBaseV2 {
     }
 
     function requestRandomWords() public {
+        console.log("request random words being called");
         // Will revert if subscription is not set and funded.
         s_requestId = COORDINATOR.requestRandomWords(
             keyHash,
@@ -120,7 +125,7 @@ contract Lottery is ERC721Tradable, VRFConsumerBaseV2 {
         if (from == s_owner) {
             nftSold++;
 
-             if (this.balanceOf(s_owner) - nftSold == 0) {
+             if (this.balanceOf(s_owner) == 0) {
                  lotteryOpen = false;
                  requestRandomWords();
              }

@@ -1,6 +1,7 @@
 // 0x4B8085a9E55ADc4b0b8D5EE93FE3621d2770C065
 // We import Chai to use its asserting functions here.
 const { expect } = require("chai");
+const { ethers } = require("hardhat");
 
 // `describe` is a Mocha function that allows you to organize your tests. It's
 // not actually needed, but having your tests organized makes debugging them
@@ -21,23 +22,31 @@ describe("NFT contract", function () {
 
   let lottery;
   let mockProxyRegistry;
-  let proxyContract;
+  let mockVFRCoordinator;
   let lotteryContract;
-  let lotteryOpen;
+  let proxyContract;
+  let vrfCoordinatorContract;
   let owner;
   let addr1;
   let addr2;
   let addrs;
 
   beforeEach(async function () {
+    [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+
     mockProxyRegistry = await ethers.getContractFactory("MockProxyRegistry");
     proxyContract = await mockProxyRegistry.deploy();
-
+    console.log("before each 1");
+    mockVFRCoordinator = await ethers.getContractFactory("MockVRFCoordinator");
+    vrfCoordinatorContract = await mockVFRCoordinator.deploy();
+    
+    console.log("before each 2");
     lottery = await ethers.getContractFactory("Lottery");
-    [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+    
     lotteryContract = await lottery.deploy(
-        proxyContract.address, 1943
+        proxyContract.address, vrfCoordinatorContract.address, 1943
     );
+    console.log("coordinator address ", vrfCoordinatorContract.address)
   });
 
   describe("Deployment", function () {
@@ -52,14 +61,22 @@ describe("NFT contract", function () {
     it("Should open the lottery when owner balance is greater than zero", async function () {
       await lotteryContract.mint(1);
       expect(await lotteryContract.getLotteryOpen()).to.equal(true);
-  });
+    });
 
-it("Should close the lottery when owner balance is zero", async function () {
-        await lotteryContract.mint(1);
-    await lotteryContract.transferFrom(owner.address, addr1.address, 1);
-   
- expect(await lotteryContract.getLotteryOpen()).to.equal(false);
-});
+    //it("Should close the lottery when owner balance is zero", async function () {
+    //  await lotteryContract.mint(1);
+    //  await lotteryContract.transferFrom(owner.address, addr1.address, 1);
+    //  expect(await lotteryContract.getLotteryOpen()).to.equal(false);
+    //});
+    
+    it("Should call request random words when all NFTs sold", async function () {
+      expect(await vrfCoordinatorContract.requestRandomWordsCalled()).to.equal(false);
+      await lotteryContract.mint(2);
+      await lotteryContract.transferFrom(owner.address, addr1.address, 1);
+      await lotteryContract.transferFrom(owner.address, addr1.address, 2);
+      //expect(await vrfCoordinatorContract.requestRandomWordsCalled()).to.equal(true);
+    });
+    
   });
 
 

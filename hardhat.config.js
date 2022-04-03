@@ -21,9 +21,11 @@ module.exports = {
     rinkeby: {
       url: `https://eth-rinkeby.alchemyapi.io/v2/${API_KEY}`,
       accounts: [MNEMONIC]
+    },
+    hardhat: {
     }
   },
   paths: {
     sources: "./contracts"
-  }
+  },
 };
