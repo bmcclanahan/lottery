@@ -36,11 +36,10 @@ describe("NFT contract", function () {
 
     mockProxyRegistry = await ethers.getContractFactory("MockProxyRegistry");
     proxyContract = await mockProxyRegistry.deploy();
-    console.log("before each 1");
+
     mockVFRCoordinator = await ethers.getContractFactory("MockVRFCoordinator");
     vrfCoordinatorContract = await mockVFRCoordinator.deploy();
-    
-    console.log("before each 2");
+
     lottery = await ethers.getContractFactory("Lottery");
     
     lotteryContract = await lottery.deploy(
@@ -63,18 +62,18 @@ describe("NFT contract", function () {
       expect(await lotteryContract.getLotteryOpen()).to.equal(true);
     });
 
-    //it("Should close the lottery when owner balance is zero", async function () {
-    //  await lotteryContract.mint(1);
-    //  await lotteryContract.transferFrom(owner.address, addr1.address, 1);
-    //  expect(await lotteryContract.getLotteryOpen()).to.equal(false);
-    //});
+    it("Should close the lottery when owner balance is zero", async function () {
+      await lotteryContract.mint(1);
+      await lotteryContract.transferFrom(owner.address, addr1.address, 1);
+      expect(await lotteryContract.getLotteryOpen()).to.equal(false);
+    });
     
     it("Should call request random words when all NFTs sold", async function () {
       expect(await vrfCoordinatorContract.requestRandomWordsCalled()).to.equal(false);
       await lotteryContract.mint(2);
       await lotteryContract.transferFrom(owner.address, addr1.address, 1);
       await lotteryContract.transferFrom(owner.address, addr1.address, 2);
-      //expect(await vrfCoordinatorContract.requestRandomWordsCalled()).to.equal(true);
+      expect(await vrfCoordinatorContract.requestRandomWordsCalled()).to.equal(true);
     });
     
   });
