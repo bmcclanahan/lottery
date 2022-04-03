@@ -57,11 +57,10 @@ contract Lottery is ERC721Tradable, VRFConsumerBaseV2 {
     bytes32 contractURIVar;
     bytes32 baseTokenURIVar;
 
-    uint32 public lotterySupply;
     event Winner(uint256 _requestId, uint256 _randomWords, uint256 _winner);
     event TransferFrom(address _from, address _to, uint256 _tokenId);
 
-    bool lotteryOpen;
+    bool lotteryOpen = false;
 
     constructor(address _proxyRegistryAddress, uint64 _s_subscriptionId)
         ERC721Tradable("Lottery", "OSC", _proxyRegistryAddress)
@@ -104,7 +103,6 @@ contract Lottery is ERC721Tradable, VRFConsumerBaseV2 {
     function mint(uint32 numNfts) public onlyOwner {
          lotterytStart = this.totalSupply();
          nftSold = 0; 
-         lotterySupply = numNfts;
          for (uint256 i = 0; i < numNfts; i++){
              this.mintTo(s_owner);
          }
@@ -122,7 +120,7 @@ contract Lottery is ERC721Tradable, VRFConsumerBaseV2 {
         if (from == s_owner) {
             nftSold++;
 
-             if (lotterySupply - nftSold == 0) {
+             if (this.balanceOf(s_owner) - nftSold == 0) {
                  lotteryOpen = false;
                  requestRandomWords();
              }
