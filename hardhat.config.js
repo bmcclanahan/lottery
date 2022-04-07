@@ -1,7 +1,8 @@
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
-
+ require('solidity-coverage')
+ 
  const MNEMONIC = process.env.MNEMONIC;
  const API_KEY = process.env.API_KEY;
 

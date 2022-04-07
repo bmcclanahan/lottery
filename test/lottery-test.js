@@ -29,13 +29,15 @@ describe("NFT contract", function () {
   let vrfCoordinatorContract;
   let WETH;
   let owner;
+  let maintenance;
+  let charity;
   let addr1;
   let addr2;
   let addrs;
   let amount = 100;
 
   beforeEach(async function () {
-    [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+    [owner, addr1, addr2, maintenance, charity, ...addrs] = await ethers.getSigners();
 
     mockWETH = await ethers.getContractFactory("MockWETH");
     WETH = await mockWETH.deploy(owner.address, amount);
@@ -48,7 +50,7 @@ describe("NFT contract", function () {
 
     lottery = await ethers.getContractFactory("Lottery");  
     lotteryContract = await lottery.deploy(
-        proxyContract.address, vrfCoordinatorContract.address, WETH.address, 1943
+        proxyContract.address, vrfCoordinatorContract.address, WETH.address, maintenance.address, charity.address, 1943
     );
   });
 
@@ -89,22 +91,146 @@ describe("NFT contract", function () {
     it("should have a WETH balance of 100", async function () {
       expect(await lotteryContract.wethBalance()).to.equal(amount);
     })
-    
+
   })
 
   describe("getWinner", function(){
     it("should return 2 if lottery is closed ", async function () {
+      await lotteryContract.mint(5);
+      for(let i=1; i<6; i++){
+        await lotteryContract.transferFrom(owner.address, addr1.address, i);
+      }
+      expect(await lotteryContract.getWinner()).to.equal(5);
+    })
+
+    it("should revert if lottery is open ", async function () {
+      await lotteryContract.mint(2);
+      //expect(await lotteryContract.getLotteryOpen()).to.equal(true);
+      await expect(lotteryContract.getWinner()).to.be.revertedWith("Lottery is not closed");
+    })
+
+    it("should result in a balance of zero WETH in the owners account when there is a winner", async function () {
+      await lotteryContract.mint(5);
+      for(let i=1; i<6; i++){
+        await lotteryContract.transferFrom(owner.address, addr1.address, i);
+      }
+      expect(await lotteryContract.getWinner()).to.equal(5);
+      await lotteryContract.payOut()
+      expect(await lotteryContract.wethBalance()).to.equal(0);
+
+    })
+  })
+
+  describe("Pay Out if Winner", function (){
+
+    it("should result in a balance of 20 WETH in the maintenance account when there is a winner", async function () {
+      await lotteryContract.mint(5);
+      for(let i=1; i<6; i++){
+        await lotteryContract.transferFrom(owner.address, addr1.address, i);
+      }
+
+      await lotteryContract.payOut()
+      expect(await WETH.balanceOf(maintenance.address)).to.equal(20);
+    })
+
+    it("should result in a balance of 10 WETH in the charity account when there is a winner", async function () {
+      await lotteryContract.mint(5);
+      for(let i=1; i<6; i++){
+        await lotteryContract.transferFrom(owner.address, addr1.address, i);
+      }
+
+      await lotteryContract.payOut()
+      expect(await WETH.balanceOf(charity.address)).to.equal(10);
+    })
+
+    it("should result in a balance of 70 WETH in the winners' account when there is a winner", async function () {
+      await lotteryContract.mint(5);
+      for(let i=1; i<6; i++){
+        await lotteryContract.transferFrom(owner.address, addr1.address, i);
+      }
+
+      await lotteryContract.payOut()
+      expect(await WETH.balanceOf(addr1.address)).to.equal(70);
+    })
+
+    it("should result in a balance of 0 WETH in the owners account when there is a winner", async function () {
+      await lotteryContract.mint(5);
+      for(let i=1; i<6; i++){
+        await lotteryContract.transferFrom(owner.address, addr1.address, i);
+      }
+    
+      await lotteryContract.payOut()
+      expect(await WETH.balanceOf(owner.address)).to.equal(0);
+    })
+  })
+
+  describe("Pay Out if No Winner", function (){
+
+    it("should result in a balance of 20 WETH in the maintenance account when there is a NOT winner", async function () {
       await lotteryContract.mint(3);
       for(let i=1; i<4; i++){
         await lotteryContract.transferFrom(owner.address, addr1.address, i);
       }
-      expect(await lotteryContract.getWinner()).to.equal(2);
+      await lotteryContract.payOut()
+      expect(await WETH.balanceOf(maintenance.address)).to.equal(20);
     })
 
-    it("should revert if lottery is open ", async function () {
+    it("should result in a balance of 80 WETH in the charity account when there is a not winner", async function () {
+      await lotteryContract.mint(3);
+      for(let i=1; i<4; i++){
+        await lotteryContract.transferFrom(owner.address, addr1.address, i);
+      }
+
+      await lotteryContract.payOut()
+      expect(await WETH.balanceOf(charity.address)).to.equal(80);
     })
 
+    it("should result in a balance of 0 WETH because there is no winner", async function () {
+      await lotteryContract.mint(3);
+      for(let i=1; i<4; i++){
+        await lotteryContract.transferFrom(owner.address, addr1.address, i);
+      }
+      await lotteryContract.payOut()
+      expect(await WETH.balanceOf(addr1.address)).to.equal(0);
+    })
+
+    it("should result in a balance of 0 WETH in the owners account after calling payout", async function () {
+      await lotteryContract.mint(3);
+      for(let i=1; i<4; i++){
+        await lotteryContract.transferFrom(owner.address, addr1.address, i);
+      }
+
+      await lotteryContract.payOut()
+      expect(await WETH.balanceOf(owner.address)).to.equal(0);
+    })
   })
 
+  describe("Set Functions", function(){
+    it("should assign charity to input address", async function () {
+      await lotteryContract.setCharity(addr1.address);
+      expect(await lotteryContract.charity()).to.equal(addr1.address);
+
+      await lotteryContract.setCharity(addr2.address);
+      expect(await lotteryContract.charity()).to.equal(addr2.address);
+    })
+
+    it("should assign maintenance to input address", async function () {
+      await lotteryContract.setMaintenance(addr1.address);
+      await expect(await lotteryContract.maintenance()).to.equal(addr1.address);
+
+      await lotteryContract.setMaintenance(addr2.address);
+      await expect(await lotteryContract.maintenance()).to.equal(addr2.address);
+    })
+
+    it("should assign subscription ID to input subscription ID", async function () {
+      await lotteryContract.setSubId(5);
+      expect(await lotteryContract.s_subscriptionId()).to.equal(5);
+
+      await lotteryContract.setSubId(7);
+      expect(await lotteryContract.s_subscriptionId()).to.equal(7);
+
+    })
+  })
   
+
 });

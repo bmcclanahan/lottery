@@ -32,10 +32,10 @@ contract MockVRFCoordinator is VRFCoordinatorV2Interface {
   ) external override returns (uint256 requestId){
     requestRandomWordsCalled = true;
     uint256 [] memory randomWords = new uint256[](2);
-    randomWords[0] = 1;
-    randomWords[1] = 1;
-    VRFConsumerBaseV2(msg.sender).rawFulfillRandomWords(uint256(1), randomWords);
-    return 1;
+    randomWords[0] = 4;
+    randomWords[1] = 4;
+    VRFConsumerBaseV2(msg.sender).rawFulfillRandomWords(uint256(4), randomWords);
+    return 4;
   }
 
 

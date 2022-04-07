@@ -2,14 +2,18 @@
 
 pragma solidity ^0.8.0;
 
-import "./ERC721Tradable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 import "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+
+import "./ERC721Tradable.sol";
 import "hardhat/console.sol";
 import "./interfaces/IERC20.sol";
+
 
 
 /**
@@ -22,7 +26,7 @@ contract Lottery is ERC721Tradable, VRFConsumerBaseV2 {
     LinkTokenInterface LINKTOKEN;
     IERC20 WETH;
 
-    uint64 s_subscriptionId;
+    uint64 public s_subscriptionId;
     //address vrfCoordinator = 0x6168499c0cFfCaCD319c818142124B7A15E857ab;
     address link = 0x01BE23585060835E02B77ef475b0Cc51aA1e0709;
     bytes32 keyHash =
@@ -37,10 +41,12 @@ contract Lottery is ERC721Tradable, VRFConsumerBaseV2 {
     address s_owner;
    // address weth = 0xc778417E063141139Fce010982780140Aa0cD5Ab;
 
-    uint256 winner; //changed assign
+    uint256 winner; 
     uint256 public lotterytStart = 0;
-    address maintenance = 0x76e7180A22a771267D3bb1d2125A036dDd8344D9;
-    address public charity = 0x76e7180A22a771267D3bb1d2125A036dDd8344D9;
+    address public maintenance;
+    //0x76e7180A22a771267D3bb1d2125A036dDd8344D9;
+    address public charity;
+    //0x76e7180A22a771267D3bb1d2125A036dDd8344D9;
 
     bytes32 contractURIVar;
     bytes32 baseTokenURIVar;
@@ -52,7 +58,7 @@ contract Lottery is ERC721Tradable, VRFConsumerBaseV2 {
 
     constructor(
         address _proxyRegistryAddress, address _vrfCoordinator, 
-        address _weth, uint64 _s_subscriptionId
+        address _weth, address _maintenance, address _charity, uint64 _s_subscriptionId
     )
         ERC721Tradable("Lottery", "OSC", _proxyRegistryAddress)
         VRFConsumerBaseV2(_vrfCoordinator)
@@ -62,6 +68,8 @@ contract Lottery is ERC721Tradable, VRFConsumerBaseV2 {
         s_owner = msg.sender;
         s_subscriptionId = _s_subscriptionId;
         WETH = IERC20(_weth);
+        maintenance = _maintenance;
+        charity = _charity;
     }
 
     function wethBalance() public view returns(uint){
@@ -75,12 +83,24 @@ contract Lottery is ERC721Tradable, VRFConsumerBaseV2 {
     function contractURI() public pure returns (string memory) {
         return "http://18.208.216.46/contract";
     }
-    
-    function setSubId(uint64 _s_subscriptionId) public onlyOwner {
-        s_subscriptionId = _s_subscriptionId;
-    }
 
-    function requestRandomWords() public {
+    function setCharity(address _charity) public onlyOwner returns(address){
+       charity = _charity;
+       return charity;
+   }
+
+   function setMaintenance(address _maintenance) public onlyOwner returns(address){
+       maintenance = _maintenance;
+       return maintenance;
+   }
+
+    function setSubId(uint64 _s_subscriptionId) public onlyOwner returns(uint64) {
+        s_subscriptionId = _s_subscriptionId;
+        return s_subscriptionId;
+    }
+    
+
+    function requestRandomWords() public{
         console.log("request random words being called");
         // Will revert if subscription is not set and funded.
         s_requestId = COORDINATOR.requestRandomWords(
@@ -102,7 +122,7 @@ contract Lottery is ERC721Tradable, VRFConsumerBaseV2 {
     }
 
 
-    function transferFrom(
+    function transferFrom (
         address from,
         address to,
         uint256 tokenId
@@ -144,14 +164,11 @@ contract Lottery is ERC721Tradable, VRFConsumerBaseV2 {
        return lotteryOpen;
    }
 
-   function pickWinner() internal  {
+   function pickWinner() internal returns(uint) {
         winner = (s_randomWords[0] % (nftSold * 2)) + 1;
+        return winner;
    }
 
-
-   function setCharity(address _charity) public onlyOwner {
-       charity = _charity;
-   }
 
    function payOut() public onlyOwner {
         uint256 charityPayout = this.wethBalance() / 10;

@@ -9,3 +9,5 @@ contracts/artifacts
 .vscode
 cache
 soljson*
+my-env
+artifacts

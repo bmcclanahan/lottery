@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
+
 import "../interfaces/IERC20.sol";
 
 contract MockWETH is IERC20 {
@@ -18,7 +22,8 @@ contract MockWETH is IERC20 {
         return balances[account];
     }
     function transfer(address to, uint256 amount) external override returns (bool){}
-    function allowance(address owner, address spender) external override view returns (uint256){}
+    //owner to ownerAddress
+    function allowance(address ownerAddress, address spender) external override view returns (uint256){}
     function approve(address spender, uint256 amount) external override returns (bool){}
     function transferFrom(
         address from,

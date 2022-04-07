@@ -7,7 +7,14 @@ const hre = require("hardhat");
 
 async function main() {
   const Lottery = await hre.ethers.getContractFactory("Lottery");
-  const lottery = await Lottery.deploy("0xf57b2c51ded3a29e6891aba85459d600256cf317", 1943);
+  const lottery = await Lottery.deploy(
+    "0xf57b2c51ded3a29e6891aba85459d600256cf317", 
+    "0x6168499c0cFfCaCD319c818142124B7A15E857ab", 
+    "0xc778417E063141139Fce010982780140Aa0cD5Ab", 
+    "0x76e7180A22a771267D3bb1d2125A036dDd8344D9", 
+    "0x76e7180A22a771267D3bb1d2125A036dDd8344D9", 
+    1943
+    );
 
   await lottery.deployed();
 
