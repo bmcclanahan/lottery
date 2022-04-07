@@ -11,3 +11,4 @@ cache
 soljson*
 my-env
 artifacts
+coverage
