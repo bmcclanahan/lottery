@@ -12,3 +12,4 @@ soljson*
 my-env
 artifacts
 coverage
+coverage.json
